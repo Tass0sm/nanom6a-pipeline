@@ -222,38 +222,3 @@ eventalign_collapse.groupTuple(by:1)
 
 nanocompore_input=Channel.create()
 ni_ref.combine(ni_other).into(nanocompore_input)
-
-process nanocompore {
-  echo true
-  container "${params.nanocompore_container}"
-  publishDir "${params.resultsDir}/", mode: 'copy'
-  input:
-    set val(ref_labels), val(ref_condition), file('npcomp_ref*.tsv'), file('npcomp_ref*.tsv.idx'), val(exp_labels), val(exp_condition), file('npcomp_exp*.tsv'), file('npcomp_exp*.tsv.idx') from nanocompore_input
-    each file(transcriptome_fasta_nanocompore)
-    each file(transcriptome_bed)
-  output:
-    file("nanocompore_${exp_condition}")
-
-script:
-  def downsample = params.downsample_high_cov ? " --downsample_high_coverage ${params.downsample_high_cov}" : " "
-  def bedfile = transcriptome_bed.name != 'NO_FILE' ? "--bed ${transcriptome_bed}" : ''
-"""
-IFS=','
-f1=(npcomp_ref*.tsv)
-f2=(npcomp_exp*.tsv)
-nanocompore sampcomp --file_list1 "\${f1[*]}" --file_list2 "\${f2[*]}" \
- --label1 ${ref_condition} \
- --label2 ${exp_condition} \
- --fasta ${transcriptome_fasta_nanocompore} \
- --outpath nanocompore_${exp_condition} \
- --sequence_context ${params.sequenceContext} \
- ${downsample} \
- ${bedfile} \
- --allow_warnings \
- --pvalue_thr ${params.pvalue_thr} \
- --min_coverage ${params.min_cov} \
- --logit \
- --nthreads ${task.cpus} \
- --log_level ${params.nanocompore_loglevel}
-"""
-}
