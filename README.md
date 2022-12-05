@@ -10,7 +10,6 @@ The pipeline runs the following steps:
 * Map the basecalled data to the reference using [minimap2](https://github.com/lh3/minimap2)
 * Realign the raw signal-level data to the kmers of the reference with [f5c](https://github.com/hasindu2008/f5c)
 * Collapse Nanopolish output by kmer using Nanocompore's eventalign_collapse
-* Run Nanocompore
 
 All steps are executed in a Docker/Singularity containers.
 
@@ -25,7 +24,7 @@ Ctrl2       Ctrl      /path/to/fast5dir
 Treated1    Trt       /path/to/fast5dir
 Treated2    Trt       /path/to/fast5dir
 ```
-
+    
 ### Configure the pipeline
 Configure the pipeline by editing the _nextflow.config_ file.
 

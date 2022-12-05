@@ -169,48 +169,25 @@ if( params.FPGA=="false"){
   // Run f5c eventalign
   process eventalign {
     publishDir "${params.resultsDir}/${sample}/", mode: 'copy'
-    container "${params.eventalign_container}"
+    // container "${params.eventalign_container}"
     input:
       // The raw data file has to have a fixed name to avoid a collision with guppy_results filename
       set val(sample), file(guppy_results), val(label), file('raw_data'), file(bam_file), file(bam_index) from guppy_outputs_eventalign.join(eventalign_annot).join(minimap)
       each file(transcriptome_fasta) from transcriptome_fasta_eventalign
     output: 
-      set val(sample), val(label), file("eventalign_collapse/out_eventalign_collapse.tsv"), file("eventalign_collapse/out_eventalign_collapse.tsv.idx") into eventalign_collapse
-      file("eventalign.txt") optional true
+      set val(sample), val(label), file("eventalign.txt") into eventalign_collapse
+      file("alignment-summary.txt") optional true
   
   
   script:
   // def cpus_each = (task.cpus/2).trunc(0)
   def cpus_each = task.cpus
-  def tee = params.keep_eventalign_files ? ' tee eventalign.txt | ' : ''
   """
+        module load python
+        source activate nanopolish-env
 	cat ${guppy_results}/pass/*.fastq > basecalled.fastq
-        f5c index -t ${cpus_each} -d 'raw_data' basecalled.fastq
-        f5c eventalign -t ${cpus_each} -r basecalled.fastq -b ${bam_file} -g ${transcriptome_fasta} --samples --print-read-names --scale-events --rna --disable-cuda=yes --min-mapq 0 | ${tee} nanocompore eventalign_collapse -t ${cpus_each} -o eventalign_collapse --log_level ${params.nanocompore_loglevel}
-  """
-  }
-}
-else{
-  // Run Huxelerate Nanopolish on FPGA
-  process nanopolish{
-    publishDir "${params.resultsDir}/${sample}/", mode: 'copy'
-    container "${params.eventalign_container}"
-    input:
-      // The raw data file has to have a fixed name to avoid a collision with guppy_results filename
-      set val(sample), file(guppy_results), val(label), file('raw_data'), file(bam_file), file(bam_index) from guppy_outputs_eventalign.join(eventalign_annot).join(minimap)
-      each file(transcriptome_fasta) from transcriptome_fasta_eventalign
-    output: 
-      set val(sample), val(label), file("eventalign_collapse/out_eventalign_collapse.tsv"), file("eventalign_collapse/out_eventalign_collapse.tsv.idx") into eventalign_collapse
-      file("eventalign.txt") optional true
-  
-  
-  script:
-  def cpus_each = (task.cpus/2).trunc(0)
-  def tee = params.keep_eventalign_files ? ' tee eventalign.txt | ' : ''
-  """
-  	cat ${guppy_results}/pass/*.fastq > basecalled.fastq
-	/huxelerate/hugenomic/hug-nanopolish.exe index -d 'raw_data' basecalled.fastq
-        /huxelerate/hugenomic/hug-nanopolish.exe eventalign -t ${cpus_each} --reads basecalled.fastq --bam ${bam_file} --genome ${transcriptome_fasta} --samples --print-read-names --scale-events | ${tee} nanocompore eventalign_collapse -t ${cpus_each} -o eventalign_collapse --log_level ${params.nanocompore_loglevel}
+        nanopolish index -d 'raw_data' basecalled.fastq
+        nanopolish eventalign --reads basecalled.fastq --bam ${bam_file} --genome ${transcriptome_fasta} --scale-events --signal-index --summary "alignment-summary.txt" --threads 10 > eventalign.txt
   """
   }
 }
