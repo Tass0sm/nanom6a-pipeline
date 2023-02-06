@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=nancompore_pipeline
+#SBATCH --job-name=nanom6a_pipeline
 #SBATCH --time=16:00:00
 #SBATCH --nodes=1 --ntasks-per-node=1
 #SBATCH --account=pas1405
@@ -8,4 +8,4 @@
 module load nextflow
 
 export NXF_EXECUTOR="slurm"
-nextflow run eventalign.nf -profile slurm -resume
+nextflow run nanom6a.nf -profile slurm -resume
